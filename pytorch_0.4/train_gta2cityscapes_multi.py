@@ -302,9 +302,9 @@ def main():
             D_out1 = model_D1(F.softmax(pred_target1))
             D_out2 = model_D2(F.softmax(pred_target2))
 
-            loss_adv_target1 = bce_loss(D_out1, torch.FloatTensor(D_out1.data.size()).fill_(source_label).to(device))
+            loss_adv_target1 = bce_loss(D_out1, torch.FloatTensor(D_out1.size()).fill_(source_label).to(device))
 
-            loss_adv_target2 = bce_loss(D_out2, torch.FloatTensor(D_out2.data.size()).fill_(source_label).to(device))
+            loss_adv_target2 = bce_loss(D_out2, torch.FloatTensor(D_out2.size()).fill_(source_label).to(device))
 
             loss = args.lambda_adv_target1 * loss_adv_target1 + args.lambda_adv_target2 * loss_adv_target2
             loss = loss / args.iter_size
@@ -328,9 +328,9 @@ def main():
             D_out1 = model_D1(F.softmax(pred1))
             D_out2 = model_D2(F.softmax(pred2))
 
-            loss_D1 = bce_loss(D_out1, torch.FloatTensor(D_out1.data.size()).fill_(source_label).to(device))
+            loss_D1 = bce_loss(D_out1, torch.FloatTensor(D_out1.size()).fill_(source_label).to(device))
 
-            loss_D2 = bce_loss(D_out2, torch.FloatTensor(D_out2.data.size()).fill_(source_label).to(device))
+            loss_D2 = bce_loss(D_out2, torch.FloatTensor(D_out2.size()).fill_(source_label).to(device))
 
             loss_D1 = loss_D1 / args.iter_size / 2
             loss_D2 = loss_D2 / args.iter_size / 2
@@ -348,9 +348,9 @@ def main():
             D_out1 = model_D1(F.softmax(pred_target1))
             D_out2 = model_D2(F.softmax(pred_target2))
 
-            loss_D1 = bce_loss(D_out1, torch.FloatTensor(D_out1.data.size()).fill_(target_label).to(device))
+            loss_D1 = bce_loss(D_out1, torch.FloatTensor(D_out1.size()).fill_(target_label).to(device))
 
-            loss_D2 = bce_loss(D_out2, torch.FloatTensor(D_out2.data.size()).fill_(target_label).to(device))
+            loss_D2 = bce_loss(D_out2, torch.FloatTensor(D_out2.size()).fill_(target_label).to(device))
 
             loss_D1 = loss_D1 / args.iter_size / 2
             loss_D2 = loss_D2 / args.iter_size / 2

@@ -1,9 +1,5 @@
-import math
-
 import numpy as np
-import torch
 import torch.nn as nn
-import torch.utils.model_zoo as model_zoo
 
 affine_par = True
 

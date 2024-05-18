@@ -116,10 +116,10 @@ def main():
 
         if args.model == "DeeplabMulti":
             output1, output2 = model(image)
-            output = interp(output2).cpu().data[0].numpy()
+            output = interp(output2).cpu().detach()[0].numpy()
         elif args.model == "DeeplabVGG" or args.model == "Oracle":
             output = model(image)
-            output = interp(output).cpu().data[0].numpy()
+            output = interp(output).cpu().detach()[0].numpy()
 
         output = output.transpose(1, 2, 0)
         output = np.asarray(np.argmax(output, axis=2), dtype=np.uint8)

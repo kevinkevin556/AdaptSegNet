@@ -1,19 +1,13 @@
 import argparse
 import os
 import os.path as osp
-import pickle
-import random
-import sys
 
-import matplotlib.pyplot as plt
 import numpy as np
-import scipy.misc
 import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.autograd import Variable
 from torch.utils import data, model_zoo
 
 from dataset.cityscapes_dataset import cityscapesDataSet
@@ -28,11 +22,11 @@ MODEL = "DeepLab"
 BATCH_SIZE = 1
 ITER_SIZE = 1
 NUM_WORKERS = 4
-DATA_DIRECTORY = "./data/GTA5"
+DATA_DIRECTORY = "C:/Users/User/Documents/Datasets/GTA5"  # "./data/GTA5"
 DATA_LIST_PATH = "./dataset/gta5_list/train.txt"
 IGNORE_LABEL = 255
 INPUT_SIZE = "1280,720"
-DATA_DIRECTORY_TARGET = "./data/Cityscapes/data"
+DATA_DIRECTORY_TARGET = "C:/Users/User/Documents/Datasets/Cityscapes"  # "./data/Cityscapes/data"
 DATA_LIST_PATH_TARGET = "./dataset/cityscapes_list/train.txt"
 INPUT_SIZE_TARGET = "1024,512"
 LEARNING_RATE = 2.5e-4
@@ -42,7 +36,7 @@ NUM_STEPS = 250000
 NUM_STEPS_STOP = 150000  # early stopping
 POWER = 0.9
 RANDOM_SEED = 1234
-RESTORE_FROM = "http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained_init-f81d91e8.pth"
+RESTORE_FROM = "https://github.com/kevinkevin556/AdaptSegNet/releases/download/v1.0.0/DeepLab_resnet_pretrained_init-f81d91e8.pth"
 SAVE_NUM_IMAGES = 2
 SAVE_PRED_EVERY = 5000
 SNAPSHOT_DIR = "./snapshots/"
@@ -112,7 +106,7 @@ def loss_calc(pred, label, gpu):
     """
     # out shape batch_size x channels x h x w -> batch_size x channels x h x w
     # label shape h x w x 1 x batch_size  -> batch_size x 1 x h x w
-    label = Variable(label.long()).cuda(gpu)
+    label = label.long().cuda(gpu)
     criterion = CrossEntropy2d().cuda(gpu)
 
     return criterion(pred, label)
@@ -152,6 +146,7 @@ def main():
     if args.model == "DeepLab":
         model = DeeplabMulti(num_classes=args.num_classes)
         if args.restore_from[:4] == "http":
+            print(f"Load model from {args.restore_from}")
             saved_state_dict = model_zoo.load_url(args.restore_from)
         else:
             saved_state_dict = torch.load(args.restore_from)
@@ -275,9 +270,9 @@ def main():
 
             # train with source
 
-            _, batch = trainloader_iter.next()
+            _, batch = next(trainloader_iter)
             images, labels, _, _ = batch
-            images = Variable(images).cuda(args.gpu)
+            images = images.cuda(args.gpu)
 
             pred1, pred2 = model(images)
             pred1 = interp(pred1)
@@ -290,14 +285,14 @@ def main():
             # proper normalization
             loss = loss / args.iter_size
             loss.backward()
-            loss_seg_value1 += loss_seg1.data.cpu().numpy()[0] / args.iter_size
-            loss_seg_value2 += loss_seg2.data.cpu().numpy()[0] / args.iter_size
+            loss_seg_value1 += loss_seg1.item() / args.iter_size
+            loss_seg_value2 += loss_seg2.item() / args.iter_size
 
             # train with target
 
-            _, batch = targetloader_iter.next()
+            _, batch = next(targetloader_iter)
             images, _, _ = batch
-            images = Variable(images).cuda(args.gpu)
+            images = images.cuda(args.gpu)
 
             pred_target1, pred_target2 = model(images)
             pred_target1 = interp_target(pred_target1)
@@ -306,15 +301,15 @@ def main():
             D_out1 = model_D1(F.softmax(pred_target1))
             D_out2 = model_D2(F.softmax(pred_target2))
 
-            loss_adv_target1 = bce_loss(D_out1, Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(args.gpu))
+            loss_adv_target1 = bce_loss(D_out1, torch.FloatTensor(D_out1.size()).fill_(source_label).cuda(args.gpu))
 
-            loss_adv_target2 = bce_loss(D_out2, Variable(torch.FloatTensor(D_out2.data.size()).fill_(source_label)).cuda(args.gpu))
+            loss_adv_target2 = bce_loss(D_out2, torch.FloatTensor(D_out2.size()).fill_(source_label).cuda(args.gpu))
 
             loss = args.lambda_adv_target1 * loss_adv_target1 + args.lambda_adv_target2 * loss_adv_target2
             loss = loss / args.iter_size
             loss.backward()
-            loss_adv_target_value1 += loss_adv_target1.data.cpu().numpy()[0] / args.iter_size
-            loss_adv_target_value2 += loss_adv_target2.data.cpu().numpy()[0] / args.iter_size
+            loss_adv_target_value1 += loss_adv_target1.item() / args.iter_size
+            loss_adv_target_value2 += loss_adv_target2.item() / args.iter_size
 
             # train D
 
@@ -332,9 +327,9 @@ def main():
             D_out1 = model_D1(F.softmax(pred1))
             D_out2 = model_D2(F.softmax(pred2))
 
-            loss_D1 = bce_loss(D_out1, Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(args.gpu))
+            loss_D1 = bce_loss(D_out1, torch.FloatTensor(D_out1.size()).fill_(source_label).cuda(args.gpu))
 
-            loss_D2 = bce_loss(D_out2, Variable(torch.FloatTensor(D_out2.data.size()).fill_(source_label)).cuda(args.gpu))
+            loss_D2 = bce_loss(D_out2, torch.FloatTensor(D_out2.size()).fill_(source_label).cuda(args.gpu))
 
             loss_D1 = loss_D1 / args.iter_size / 2
             loss_D2 = loss_D2 / args.iter_size / 2
@@ -342,8 +337,8 @@ def main():
             loss_D1.backward()
             loss_D2.backward()
 
-            loss_D_value1 += loss_D1.data.cpu().numpy()[0]
-            loss_D_value2 += loss_D2.data.cpu().numpy()[0]
+            loss_D_value1 += loss_D1.item()
+            loss_D_value2 += loss_D2.item()
 
             # train with target
             pred_target1 = pred_target1.detach()
@@ -352,9 +347,9 @@ def main():
             D_out1 = model_D1(F.softmax(pred_target1))
             D_out2 = model_D2(F.softmax(pred_target2))
 
-            loss_D1 = bce_loss(D_out1, Variable(torch.FloatTensor(D_out1.data.size()).fill_(target_label)).cuda(args.gpu))
+            loss_D1 = bce_loss(D_out1, torch.FloatTensor(D_out1.size()).fill_(target_label).cuda(args.gpu))
 
-            loss_D2 = bce_loss(D_out2, Variable(torch.FloatTensor(D_out2.data.size()).fill_(target_label)).cuda(args.gpu))
+            loss_D2 = bce_loss(D_out2, torch.FloatTensor(D_out2.size()).fill_(target_label).cuda(args.gpu))
 
             loss_D1 = loss_D1 / args.iter_size / 2
             loss_D2 = loss_D2 / args.iter_size / 2
@@ -362,8 +357,8 @@ def main():
             loss_D1.backward()
             loss_D2.backward()
 
-            loss_D_value1 += loss_D1.data.cpu().numpy()[0]
-            loss_D_value2 += loss_D2.data.cpu().numpy()[0]
+            loss_D_value1 += loss_D1.item()
+            loss_D_value2 += loss_D2.item()
 
         optimizer.step()
         optimizer_D1.step()

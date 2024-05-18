@@ -1,5 +1,10 @@
 # Learning to Adapt Structured Output Space for Semantic Segmentation
 
+> [!CAUTION]
+> This is a **forked version** of AdaptSegNet and is **NOT** officially maintained by the original authors. I tried to make it work with Python 3 and a latter version of CUDA. 
+> 
+> Here is the official implementation: [Official AdaptSegNet](https://github.com/wasidennis/AdaptSegNet)
+
 Pytorch implementation of our method for adapting semantic segmentation from the synthetic dataset (source domain) to the real dataset (target domain). Based on this implementation, our result is ranked 3rd in the [VisDA Challenge](http://ai.bu.edu/visda-2017/).
 
 Contact: Yi-Hsuan Tsai (wasidennis at gmail dot com) and Wei-Chih Hung (whung8 at ucmerced dot edu)
@@ -20,21 +25,14 @@ Please cite our paper if you find it useful for your research.
 }
 ```
 
-## Example Results
-
-![](figure/result_git.png)
-
-## Quantitative Reuslts
-
-![](figure/iou_comparison_v2.png)
 
 ## Installation
-* Install PyTorch from http://pytorch.org with Python 2 and CUDA 8.0
+* Install PyTorch from http://pytorch.org with Python 3 and CUDA 11.8 or above.
 
-* **NEW** Add the LS-GAN objective to improve the performance
+* Add the LS-GAN objective to improve the performance
   - Usage: add `--gan LS` option during training (see below for more details)
 
-* PyTorch 0.4 with Python 3 and CUDA 8.0
+* PyTorch 2.0.1 with Python 3 and CUDA 11.8
   - Usage: replace the training and evaluation codes with the ones in the `pytorch_0.4` folder
   - Update: tensorboard is provided by adding `--tensorboard` in the command
   - Note: the single-level model works as expected, while the multi-level model requires smaller weights, e.g., `--lambda-adv-target1 0.00005 --lambda-adv-target2 0.0005`. We will investigate this issue soon.

@@ -6,7 +6,6 @@ import torch
 import torch.nn as nn
 from packaging import version
 from PIL import Image
-from torch.autograd import Variable
 from torch.utils import data, model_zoo
 
 from dataset.cityscapes_dataset import cityscapesDataSet
@@ -55,18 +54,10 @@ def get_arguments():
     """
     parser = argparse.ArgumentParser(description="DeepLab-ResNet Network")
     parser.add_argument("--model", type=str, default=MODEL, help="Model Choice (DeeplabMulti/DeeplabVGG/Oracle).")
-    parser.add_argument(
-        "--data-dir", type=str, default=DATA_DIRECTORY, help="Path to the directory containing the Cityscapes dataset."
-    )
-    parser.add_argument(
-        "--data-list", type=str, default=DATA_LIST_PATH, help="Path to the file listing the images in the dataset."
-    )
-    parser.add_argument(
-        "--ignore-label", type=int, default=IGNORE_LABEL, help="The index of the label to ignore during the training."
-    )
-    parser.add_argument(
-        "--num-classes", type=int, default=NUM_CLASSES, help="Number of classes to predict (including background)."
-    )
+    parser.add_argument("--data-dir", type=str, default=DATA_DIRECTORY, help="Path to the directory containing the Cityscapes dataset.")
+    parser.add_argument("--data-list", type=str, default=DATA_LIST_PATH, help="Path to the file listing the images in the dataset.")
+    parser.add_argument("--ignore-label", type=int, default=IGNORE_LABEL, help="The index of the label to ignore during the training.")
+    parser.add_argument("--num-classes", type=int, default=NUM_CLASSES, help="Number of classes to predict (including background).")
     parser.add_argument("--restore-from", type=str, default=RESTORE_FROM, help="Where restore model parameters from.")
     parser.add_argument("--gpu", type=int, default=0, help="choose gpu device.")
     parser.add_argument("--set", type=str, default=SET, help="choose evaluation set.")
@@ -110,9 +101,7 @@ def main():
     model.cuda(gpu0)
 
     testloader = data.DataLoader(
-        cityscapesDataSet(
-            args.data_dir, args.data_list, crop_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set=args.set
-        ),
+        cityscapesDataSet(args.data_dir, args.data_list, crop_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
         batch_size=1,
         shuffle=False,
         pin_memory=True,
@@ -128,11 +117,13 @@ def main():
             print("%d processd" % index)
         image, _, name = batch
         if args.model == "DeeplabMulti":
-            output1, output2 = model(Variable(image, volatile=True).cuda(gpu0))
-            output = interp(output2).cpu().data[0].numpy()
+            with torch.no_grad():
+                output1, output2 = model(image.cuda(gpu0))
+                output = interp(output2).cpu().detach()[0].numpy()
         elif args.model == "DeeplabVGG" or args.model == "Oracle":
-            output = model(Variable(image, volatile=True).cuda(gpu0))
-            output = interp(output).cpu().data[0].numpy()
+            with torch.no_grad():
+                output = model(image.cuda(gpu0))
+                output = interp(output).cpu().detach()[0].numpy()
 
         output = output.transpose(1, 2, 0)
         output = np.asarray(np.argmax(output, axis=2), dtype=np.uint8)
